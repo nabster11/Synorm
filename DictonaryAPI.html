@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src = "http://code.jquery.com/jquery-latest.min.js"></script>
+<script>
+var html;
+var map = new Array();
+var wordsIndex = new Array();
+$(document).ready(function()
+{
+	console.log(window.location);
+	var previousSpace=0;
+	$('#text').keyup(function(e)
+	{	
+		//console.log(e.which);
+		if(e.which == 32 || e.which == 190)
+		{
+			var val = $(this).val().substring(previousSpace,$(this).val().length-1);
+			console.log(val);
+			val = val.trim();
+			if(!(val in map))
+			{
+				getFrequency(val,val.length,previousSpace+1);
+			}
+			previousSpace =$(this).val().length;
+		}
+	});
+	
+	$('#btn').click(function()
+	{
+		console.log(map);
+		
+		for(var i in map)
+		{
+			var val = $('#text').val();
+			var find = i;
+			var re = new RegExp(find, 'g');
+			val = val.replace(re, map[i]["synonyms"][0]);
+			$('#text').val(val);
+		}
+		
+		
+	});
+});//end ready
+
+function getFrequency(word,length,index)
+{
+	var url = "http://api.wordnik.com:80/v4/word.json/"+word+"/frequency?useCanonical=false&startYear=2012&endYear=2012&api_key=b1eab6b2f9dc1aa94c00707f21502ed3ac2d501884485ecc7";
+	console.log(url);
+	$.ajax(
+	{
+		url : url,
+		type : "GET",
+		dataType: "jsonp",
+		crossDomain : true,
+		async:false,
+		success : function(data)
+		{
+			console.log(data);
+			if(data.totalCount < 500)
+			{
+				var sym = getSynonym(word,data.totalCount,length,index);
+			}
+		}
+	});
+}
+function getSynonym(word,frequency,length,index)
+{
+	var url = "http://api.wordnik.com:80/v4/word.json/"+word+"/relatedWords?useCanonical=false&relationshipTypes=synonym&limitPerRelationshipType=10&api_key=b1eab6b2f9dc1aa94c00707f21502ed3ac2d501884485ecc7";
+	console.log(url);
+	$.ajax(
+	{
+		url : url,
+		type : "GET",
+		dataType: "jsonp",
+		crossDomain : true,
+		async:false,
+		success : function(data)
+		{
+			console.log(data);
+			var tmp = new Array();
+			tmp["frequency"] = frequency;
+			tmp["synonyms"]=new Array();
+			tmp["synonyms"]= data[0]["words"];
+			/*if(data[0]["words"])
+			{
+				for(var i in data["words"])
+				{
+					console.log(data[0]["words"][i]);
+					tmp["synonyms"].push(data[0]["words"][i]);
+				}	
+			}*/
+			tmp["length"]=length;
+			tmp["index"]=index;
+			map[word] = tmp;
+			//wordsIndex[word].push(index);
+		}
+	});
+
+}
+</script>
+</head>
+<body>
+<!-- <script src = "http://en.wiktionary.org/w/api.php?action=parse&format=json&prop=text&callback=getData&page=belch"></script> -->
+
+<textarea id ="text" rows="50" cols="100"> </textarea>
+<button id="btn">Click</button>
+</body>
+</html>
